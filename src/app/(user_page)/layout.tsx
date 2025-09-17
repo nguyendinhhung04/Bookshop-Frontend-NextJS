@@ -4,7 +4,8 @@ import "../globals.css";
 import Link from "next/link";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Script from "next/script";
-
+import {Provider} from "react-redux";
+import StoreProvider from "@/lib/StoreProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,7 +45,7 @@ export default function RootLayout({
         </nav>
 
         <main>
-            {children}
+            <StoreProvider>{children}</StoreProvider>
         </main>
 
         </body>

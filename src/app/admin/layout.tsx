@@ -2,6 +2,7 @@ import {Geist, Geist_Mono} from "next/font/google";
 import type {Metadata} from "next";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Link from "next/link";
+import StoreProvider from "@/lib/StoreProvider";
 
 
 const geistSans = Geist({
@@ -31,15 +32,15 @@ export default function RootLayout({children,}: Readonly<{
             <div className="container">
                 <div>
                     <ul className="navbar-nav ms-auto">
-                        <li className="nav-item"><Link className="text-white nav-link" href="/">Home</Link></li>
-                        <li className="nav-item"><Link className="text-white nav-link" href="/login">Login</Link></li>
-                        <li className="nav-item"><Link className="text-white nav-link" href="/register">Register</Link></li>
+                        <li className="nav-item"><Link className="text-white nav-link" href="/admin/login">Login</Link></li>
                     </ul>
                 </div>
             </div>
         </nav>
 
-        {children}
+        <StoreProvider>
+            {children}
+        </StoreProvider>
 
         </body>
         </html>

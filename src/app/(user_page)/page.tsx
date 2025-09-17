@@ -10,11 +10,11 @@ import BookTable from "@/app/(user_page)/(components)/BookTable";
 async function fetchBooks() {
     // const res = await fetch("https://restcountries.com/v3.1/name/Viet");
     // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // Disable SSL verification
-    const res = await axios.get(`http://localhost:5120/getbooks`)
-    if (res.status !== 200) {
-        throw new Error("Failed to fetch data");
-    }
-    return res.data;
+    // const res = await axios.get(`http://localhost:5120/getbooks`)
+    // if (res.status !== 200) {
+    //     throw new Error("Failed to fetch data");
+    // }
+    // return res.data;
 }
 
 export default async function Home(
@@ -27,10 +27,6 @@ export default async function Home(
   return (
       <div>
             <p>This is Home Page</p>
-          <FetchButton></FetchButton>
-          <Suspense fallback={<Loading />}>
-                <BookTable params={books}></BookTable>
-          </Suspense>
       </div>
   );
 }
