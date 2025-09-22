@@ -45,7 +45,7 @@ export default function RootLayout({
         </nav>
 
         <main>
-            <StoreProvider>{children}</StoreProvider>
+           {children}
         </main>
 
         </body>

@@ -28,15 +28,7 @@ export default function RootLayout({children,}: Readonly<{
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-        <nav className="navbar navbar-expand-lg bg-primary">
-            <div className="container">
-                <div>
-                    <ul className="navbar-nav ms-auto">
-                        <li className="nav-item"><Link className="text-white nav-link" href="/admin/login">Login</Link></li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+
 
         <StoreProvider>
             {children}

@@ -21,12 +21,14 @@ export default function LoginForm() {
         redirect("/admin");
     }
 
+    
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         axios.postForm("https://localhost:7024/admin/login", {username, password}).then((data) => {
             if(data.status === 200)
             {
                 dispatch(login(data.data.token));
+                localStorage.setItem("token", data.data.token);
                 redirect("/admin");
             }
             else {
