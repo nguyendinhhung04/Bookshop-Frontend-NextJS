@@ -21,14 +21,51 @@ import {
     Typography
 } from "@mui/material";
 
+interface TabbleRow{
+    ID: number,
+    NAME: string,
+    CATEGORY: string,
+    ON_SALE: number,
+    PRICE: number
+}
+
+interface DisplayBookDetail {
+    ID: number;
+    NAME: string;
+    NUMBER_OF_PAGE: number;
+    ON_SALE: number;
+    PRICE: number;
+    DISCOUNT: number;
+    DESCRIPTION: string;
+    COVER_URL: string;
+    CATEGORY: string|null;
+    PUBLISHER_DATE: string|null;
+}
+
+function DisplayBookDetail() {
+    return {
+        ID: 0,
+        NAME: "",
+        NUMBER_OF_PAGE: 0,
+        ON_SALE: 0,
+        PRICE: 0,
+        DISCOUNT: 0,
+        DESCRIPTION: "",
+        COVER_URL: "",
+        CATEGORY: "",
+        PUBLISHER_DATE: null
+    }
+}
+
 export default function TabbleManager() {
-    const [tableList, setTableList] = useState<Book[]>([]);
-    const [book, setBook] = useState<Book>( Book() );
+    const [tableList, setTableList] = useState<TabbleRow[]>([]);
+    const [book, setBook] = useState<Book>(Book());
     const [openAdd, setOpenAdd] = useState(false);
 
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
     const [selectedBook, setSelectedBook] = useState<Book | null>(null); // Sách được chọn để xem/chỉnh sửa
+    const [bookDetail, setBookDetail] = useState<DisplayBookDetail>()
 
     useEffect(() => {
         fetchBooks();
@@ -44,6 +81,34 @@ export default function TabbleManager() {
                 console.error("There was an error!", error);
             });
     };
+
+    const getOneBook = (id: number) => {
+        api.get(`/getbook/${id}`).then((response1) => {
+            console.log(response1.data);
+            setBookDetail(response1.data);
+
+            // api.get(`/getcategory/${response1.data.CATEGORY_ID}`).then((responese2) => {
+            //     if(responese2.data)
+            //     {
+            //         setBookDetail(
+            //             {
+            //                 ID: response1.data.ID,
+            //                 NAME: response1.data.NAME,
+            //                 NUMBER_OF_PAGE: response1.data.NUMBER_OF_PAGE,
+            //                 ON_SALE: response1.data.ON_SALE,
+            //                 PRICE: response1.data.PRICE,
+            //                 DISCOUNT: response1.data.DISCOUNT,
+            //                 DESCRIPTION: response1.data.DESCRIPTION,
+            //                 COVER_URL: response1.data.COVER_URL,
+            //                 CATEGORY: responese2.data.NAME,
+            //                 PUBLISHER_DATE: response1.data.PUBLISHER_DATE
+            //             }
+            //         )
+            //     }
+            // }).catch((error) => {console.log(error)})
+        }).catch((error) => {console.log(error)})
+    }
+
 
     const handleDelete = (id: number) => {
         if (window.confirm("Are you sure you want to delete this book?")) {
@@ -63,7 +128,7 @@ export default function TabbleManager() {
         const newBook = {
             ID: null,
             NAME: book.NAME,
-            NUMBER_OF_PAGE: book.NUMBER_OF_PAGE,
+            CATEGORY_ID: book.CATEGORY_ID,
             ON_SALE: book.ON_SALE,
         };
         api
@@ -105,9 +170,10 @@ export default function TabbleManager() {
                     <TableHead>
                         <TableRow>
                             <TableCell>ID</TableCell>
-                            <TableCell>Title</TableCell>
-                            <TableCell>Number of Pages</TableCell>
+                            <TableCell>Name</TableCell>
+                            <TableCell>Category</TableCell>
                             <TableCell>On Sale</TableCell>
+                            <TableCell>Price</TableCell>
                             <TableCell>Actions</TableCell>
                         </TableRow>
                     </TableHead>
@@ -116,8 +182,9 @@ export default function TabbleManager() {
                             <TableRow key={b.ID}>
                                 <TableCell>{b.ID}</TableCell>
                                 <TableCell>{b.NAME}</TableCell>
-                                <TableCell>{b.NUMBER_OF_PAGE}</TableCell>
+                                <TableCell>{b.CATEGORY}</TableCell>
                                 <TableCell>{b.ON_SALE === 1 ? "Yes" : "No"}</TableCell>
+                                <TableCell>{b.PRICE}</TableCell>
                                 <TableCell>
                                     <Button
                                         variant="outlined"
@@ -125,7 +192,7 @@ export default function TabbleManager() {
                                         size="small"
                                         sx={{ mr: 1 }}
                                         onClick={() => {
-                                            setSelectedBook(b);
+                                            getOneBook(b.ID);
                                             setOpenDetail(true);
                                         }}
                                     >
@@ -152,19 +219,16 @@ export default function TabbleManager() {
                 <Box component="form" onSubmit={handleAdd}>
                     <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         <TextField
-                            label="Title"
+                            label="Name"
                             value={book.NAME}
                             onChange={(e) => setBook({ ...book, NAME: e.target.value })}
                             required
                             fullWidth
                         />
                         <TextField
-                            label="Number of Pages"
-                            type="number"
-                            value={book.NUMBER_OF_PAGE}
-                            onChange={(e) =>
-                                setBook({ ...book, NUMBER_OF_PAGE: Number(e.target.value) })
-                            }
+                            label="Category"
+                            value={book.CATEGORY_ID}
+                            onChange={(e) => setBook({ ...book, CATEGORY_ID: Number(e.target.value) })}
                             required
                             fullWidth
                         />
@@ -193,40 +257,75 @@ export default function TabbleManager() {
             {/* Dialog chi tiết/chỉnh sửa sách */}
             <Dialog open={openDetail} onClose={() => setOpenDetail(false)} fullWidth maxWidth="sm">
                 <DialogTitle>Edit Book</DialogTitle>
-                {selectedBook && (
+                {bookDetail && (
                     <Box component="form" onSubmit={handleUpdate}>
                         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            {/*<TextField*/}
-                            {/*    label="ID"*/}
-                            {/*    value={selectedBook.ID}*/}
-                            {/*    disabled*/}
-                            {/*    fullWidth*/}
-                            {/*/>*/}
-                            {/*<TextField*/}
-                            {/*    label="Title"*/}
-                            {/*    value={selectedBook.NAME}*/}
-                            {/*    onChange={(e) =>*/}
-                            {/*        setSelectedBook({ ...selectedBook, NAME: e.target.value })*/}
-                            {/*    }*/}
-                            {/*    required*/}
-                            {/*    fullWidth*/}
-                            {/*/>*/}
-
-                            {Object.entries(selectedBook).map(([key, value]) => (
-                                <TextField
-                                    key={key}
-                                    label={key}
-                                    value={value}
-                                    onChange={(e) =>
-                                        setBook({
-                                            ...selectedBook,
-                                            [key]: isNaN(Number(value)) ? e.target.value : Number(e.target.value),
-                                        })
-                                    }
-                                    fullWidth
-                                />
-                            ))}
-
+                            <TextField
+                                label="ID"
+                                value={bookDetail.ID}
+                                disabled
+                                fullWidth
+                            />
+                            <TextField
+                                label="Name"
+                                value={bookDetail.NAME}
+                                onChange={(e) =>
+                                    setBookDetail({ ...bookDetail, NAME: e.target.value })
+                                }
+                                required
+                                fullWidth
+                            />
+                            <TextField
+                                label="Category"
+                                value={bookDetail.CATEGORY}
+                                disabled={true}
+                                fullWidth
+                            />
+                            <TextField
+                                label="On Sale (0 or 1)"
+                                type="number"
+                                value={bookDetail.ON_SALE}
+                                onChange={(e) =>
+                                    setBookDetail({ ...bookDetail, ON_SALE: Number(e.target.value) })
+                                }
+                                required
+                                fullWidth
+                            />
+                            <TextField
+                                label="Price"
+                                type="number"
+                                value={bookDetail.PRICE}
+                                onChange={(e) =>
+                                    setBookDetail({ ...bookDetail, PRICE: Number(e.target.value) })
+                                }
+                                required
+                                fullWidth
+                            />
+                            <TextField
+                                label="Discount"
+                                type="number"
+                                value={bookDetail.DISCOUNT}
+                                onChange={(e) =>
+                                    setBookDetail({ ...bookDetail, DISCOUNT: Number(e.target.value) })
+                                }
+                                required
+                                fullWidth
+                            />
+                            <TextField
+                                label="Description"
+                                value={bookDetail.DESCRIPTION}
+                                onChange={(e) => setBookDetail({ ...bookDetail, DESCRIPTION: e.target.value })}
+                                required
+                                fullWidth
+                                multiline
+                                minRows={4}
+                            />
+                            <TextField
+                                label="Publish date"
+                                value={bookDetail.PUBLISHER_DATE}
+                                disabled={true}
+                                fullWidth
+                            />
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setOpenDetail(false)} color="secondary">

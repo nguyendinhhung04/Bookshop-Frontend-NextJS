@@ -8,7 +8,7 @@ export interface Book{
     DESCRIPTION: string;
     COVER_URL: string;
     CATEGORY_ID: number|null;
-    PUBLISHER_DATE: number|null;
+    PUBLISHER_DATE: string|null;
 }
 
 export function Book()
@@ -23,6 +23,6 @@ export function Book()
         DESCRIPTION: "",
         COVER_URL: "",
         CATEGORY_ID: null,
-        PUBLISHER_DATE: null
+        PUBLISHER_DATE: ""
     }
 }
