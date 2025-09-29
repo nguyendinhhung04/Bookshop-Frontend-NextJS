@@ -40,22 +40,9 @@ interface DisplayBookDetail {
     COVER_URL: string;
     CATEGORY: string|null;
     PUBLISHER_DATE: string|null;
+    AUTHORS: string|null;
 }
 
-function DisplayBookDetail() {
-    return {
-        ID: 0,
-        NAME: "",
-        NUMBER_OF_PAGE: 0,
-        ON_SALE: 0,
-        PRICE: 0,
-        DISCOUNT: 0,
-        DESCRIPTION: "",
-        COVER_URL: "",
-        CATEGORY: "",
-        PUBLISHER_DATE: null
-    }
-}
 
 export default function TabbleManager() {
     const [tableList, setTableList] = useState<TabbleRow[]>([]);
@@ -65,7 +52,7 @@ export default function TabbleManager() {
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
     const [selectedBook, setSelectedBook] = useState<Book | null>(null); // Sách được chọn để xem/chỉnh sửa
-    const [bookDetail, setBookDetail] = useState<DisplayBookDetail>()
+    const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null)
 
     useEffect(() => {
         fetchBooks();
@@ -79,6 +66,7 @@ export default function TabbleManager() {
             })
             .catch((error) => {
                 console.error("There was an error!", error);
+                window.alert("Can not connect to server, Please try again later!");
             });
     };
 
@@ -86,26 +74,6 @@ export default function TabbleManager() {
         api.get(`/getbook/${id}`).then((response1) => {
             console.log(response1.data);
             setBookDetail(response1.data);
-
-            // api.get(`/getcategory/${response1.data.CATEGORY_ID}`).then((responese2) => {
-            //     if(responese2.data)
-            //     {
-            //         setBookDetail(
-            //             {
-            //                 ID: response1.data.ID,
-            //                 NAME: response1.data.NAME,
-            //                 NUMBER_OF_PAGE: response1.data.NUMBER_OF_PAGE,
-            //                 ON_SALE: response1.data.ON_SALE,
-            //                 PRICE: response1.data.PRICE,
-            //                 DISCOUNT: response1.data.DISCOUNT,
-            //                 DESCRIPTION: response1.data.DESCRIPTION,
-            //                 COVER_URL: response1.data.COVER_URL,
-            //                 CATEGORY: responese2.data.NAME,
-            //                 PUBLISHER_DATE: response1.data.PUBLISHER_DATE
-            //             }
-            //         )
-            //     }
-            // }).catch((error) => {console.log(error)})
         }).catch((error) => {console.log(error)})
     }
 
@@ -146,6 +114,9 @@ export default function TabbleManager() {
         if (!selectedBook) return;
         api
             .put(`/updatebook/`, selectedBook)
+            .then((response) => {
+                console.log("Response from server:", response.data);
+            })
             .catch((e) => console.log(e))
             .finally(() => {
                 fetchBooks();
@@ -243,6 +214,7 @@ export default function TabbleManager() {
                             fullWidth
                         />
                     </DialogContent>
+
                     <DialogActions>
                         <Button onClick={() => setOpenAdd(false)} color="secondary">
                             Cancel
@@ -255,7 +227,7 @@ export default function TabbleManager() {
             </Dialog>
 
             {/* Dialog chi tiết/chỉnh sửa sách */}
-            <Dialog open={openDetail} onClose={() => setOpenDetail(false)} fullWidth maxWidth="sm">
+            <Dialog open={openDetail} onClose={() => {setOpenDetail(false); setBookDetail(null)}} fullWidth maxWidth="sm">
                 <DialogTitle>Edit Book</DialogTitle>
                 {bookDetail && (
                     <Box component="form" onSubmit={handleUpdate}>
@@ -278,6 +250,12 @@ export default function TabbleManager() {
                             <TextField
                                 label="Category"
                                 value={bookDetail.CATEGORY}
+                                disabled={true}
+                                fullWidth
+                            />
+                            <TextField
+                                label="Authors"
+                                value={bookDetail.AUTHORS}
                                 disabled={true}
                                 fullWidth
                             />
@@ -328,7 +306,10 @@ export default function TabbleManager() {
                             />
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={() => setOpenDetail(false)} color="secondary">
+                            <Button onClick={() => {
+                                setOpenDetail(false)
+                                setBookDetail(null)
+                            }} color="secondary">
                                 Cancel
                             </Button>
                             <Button type="submit" variant="contained" color="primary">
