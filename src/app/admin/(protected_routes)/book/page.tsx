@@ -43,6 +43,14 @@ interface DisplayBookDetail {
     AUTHORS: string|null;
 }
 
+interface UpdatedBook {
+    Id: number;
+    NAME: string;
+    DESCRIPTION: string;
+    ON_SALE: number;
+    PRICE: number;
+    DISCOUNT: number;
+}
 
 export default function TabbleManager() {
     const [tableList, setTableList] = useState<TabbleRow[]>([]);
@@ -51,7 +59,6 @@ export default function TabbleManager() {
 
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
-    const [selectedBook, setSelectedBook] = useState<Book | null>(null); // Sách được chọn để xem/chỉnh sửa
     const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null)
 
     useEffect(() => {
@@ -111,9 +118,19 @@ export default function TabbleManager() {
 
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedBook) return;
+        if (!bookDetail) return;
+
+        const updatedBook: UpdatedBook = {
+            Id: bookDetail.ID,
+            NAME: bookDetail.NAME,
+            DESCRIPTION: bookDetail.DESCRIPTION,
+            ON_SALE: bookDetail.ON_SALE,
+            PRICE: bookDetail.PRICE,
+            DISCOUNT: bookDetail.DISCOUNT
+        }
+
         api
-            .put(`/updatebook/`, selectedBook)
+            .put(`/updatebook/`, updatedBook )
             .then((response) => {
                 console.log("Response from server:", response.data);
             })
@@ -121,7 +138,7 @@ export default function TabbleManager() {
             .finally(() => {
                 fetchBooks();
                 setOpenDetail(false);
-                setSelectedBook(null);
+                setBookDetail(null);
             });
     };
 
@@ -185,46 +202,46 @@ export default function TabbleManager() {
             </TableContainer>
 
             {/* Dialog thêm sách */}
-            <Dialog open={openAdd} onClose={() => setOpenAdd(false)} fullWidth maxWidth="sm">
-                <DialogTitle>Add New Book</DialogTitle>
-                <Box component="form" onSubmit={handleAdd}>
-                    <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <TextField
-                            label="Name"
-                            value={book.NAME}
-                            onChange={(e) => setBook({ ...book, NAME: e.target.value })}
-                            required
-                            fullWidth
-                        />
-                        <TextField
-                            label="Category"
-                            value={book.CATEGORY_ID}
-                            onChange={(e) => setBook({ ...book, CATEGORY_ID: Number(e.target.value) })}
-                            required
-                            fullWidth
-                        />
-                        <TextField
-                            label="On Sale (0 or 1)"
-                            type="number"
-                            value={book.ON_SALE}
-                            onChange={(e) =>
-                                setBook({ ...book, ON_SALE: Number(e.target.value) })
-                            }
-                            required
-                            fullWidth
-                        />
-                    </DialogContent>
+            {/*<Dialog open={openAdd} onClose={() => setOpenAdd(false)} fullWidth maxWidth="sm">*/}
+            {/*    <DialogTitle>Add New Book</DialogTitle>*/}
+            {/*    <Box component="form" onSubmit={handleAdd}>*/}
+            {/*        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>*/}
+            {/*            <TextField*/}
+            {/*                label="Name"*/}
+            {/*                value={book.NAME}*/}
+            {/*                onChange={(e) => setBook({ ...book, NAME: e.target.value })}*/}
+            {/*                required*/}
+            {/*                fullWidth*/}
+            {/*            />*/}
+            {/*            <TextField*/}
+            {/*                label="Category"*/}
+            {/*                value={book.CATEGORY_ID}*/}
+            {/*                onChange={(e) => setBook({ ...book, CATEGORY_ID: Number(e.target.value) })}*/}
+            {/*                required*/}
+            {/*                fullWidth*/}
+            {/*            />*/}
+            {/*            <TextField*/}
+            {/*                label="On Sale (0 or 1)"*/}
+            {/*                type="number"*/}
+            {/*                value={book.ON_SALE}*/}
+            {/*                onChange={(e) =>*/}
+            {/*                    setBook({ ...book, ON_SALE: Number(e.target.value) })*/}
+            {/*                }*/}
+            {/*                required*/}
+            {/*                fullWidth*/}
+            {/*            />*/}
+            {/*        </DialogContent>*/}
 
-                    <DialogActions>
-                        <Button onClick={() => setOpenAdd(false)} color="secondary">
-                            Cancel
-                        </Button>
-                        <Button type="submit" variant="contained" color="primary">
-                            Save
-                        </Button>
-                    </DialogActions>
-                </Box>
-            </Dialog>
+            {/*        <DialogActions>*/}
+            {/*            <Button onClick={() => setOpenAdd(false)} color="secondary">*/}
+            {/*                Cancel*/}
+            {/*            </Button>*/}
+            {/*            <Button type="submit" variant="contained" color="primary">*/}
+            {/*                Save*/}
+            {/*            </Button>*/}
+            {/*        </DialogActions>*/}
+            {/*    </Box>*/}
+            {/*</Dialog>*/}
 
             {/* Dialog chi tiết/chỉnh sửa sách */}
             <Dialog open={openDetail} onClose={() => {setOpenDetail(false); setBookDetail(null)}} fullWidth maxWidth="sm">
