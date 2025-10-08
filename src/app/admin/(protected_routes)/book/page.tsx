@@ -3,14 +3,15 @@
 import api from "@/lib/features/api/axiosInterceptor";
 import { useEffect, useState } from "react";
 import { Book } from "@/lib/interface/book";
+import SearchIcon from "@mui/icons-material/Search";
 import {
     Box,
     Button,
     Dialog,
     DialogActions,
     DialogContent,
-    DialogTitle,
-    Paper,
+    DialogTitle, IconButton, MenuItem,
+    Paper, Select, Slider,
     Table,
     TableBody,
     TableCell,
@@ -20,6 +21,8 @@ import {
     TextField,
     Typography
 } from "@mui/material";
+import AddBookDialog from "@/app/admin/(components)/AddBookDialog";
+import {CustomSearchInfo} from "@/lib/interface/BookInfo";
 
 interface TabbleRow{
     ID: number,
@@ -32,7 +35,6 @@ interface TabbleRow{
 interface DisplayBookDetail {
     ID: number;
     NAME: string;
-    NUMBER_OF_PAGE: number;
     ON_SALE: number;
     PRICE: number;
     DISCOUNT: number;
@@ -54,20 +56,34 @@ interface UpdatedBook {
 
 export default function TabbleManager() {
     const [tableList, setTableList] = useState<TabbleRow[]>([]);
-    const [book, setBook] = useState<Book>(Book());
-    const [openAdd, setOpenAdd] = useState(false);
+    const [categoryList, setCategoryList] = useState<{ID: number, NAME: string}[]>([]);
+
+    // const [book, setBook] = useState<Book>(Book());
+
 
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
-    const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null)
+    const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null);
+    const [customSearchInfo, setCustomSearchInfo] = useState(
+        CustomSearchInfo()
+    );
+    const [priceBarValue, setPriceBarValue] = useState<number[]>([customSearchInfo.min_price, customSearchInfo.max_price]);
+
+    const [openCustomSearch, setOpenCustomSearch] = useState(false);
+    const [openAdd, setOpenAdd] = useState(false);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+
+    const handleClose = () => setOpenAdd(false);
 
     useEffect(() => {
         fetchBooks();
-    }, []);
+    }, [page]);
 
     const fetchBooks = () => {
         api
-            .get("/getallbooks")
+            .get(`/getallbooks?name=${searchTerm}&page=${page}`)
             .then((response) => {
                 setTableList(response.data);
             })
@@ -75,6 +91,9 @@ export default function TabbleManager() {
                 console.error("There was an error!", error);
                 window.alert("Can not connect to server, Please try again later!");
             });
+        api.get("/getallcategory").then((res) => {
+            setCategoryList(res.data);
+        });
     };
 
     const getOneBook = (id: number) => {
@@ -98,23 +117,14 @@ export default function TabbleManager() {
         }
     };
 
-    const handleAdd = (e: React.FormEvent) => {
-        e.preventDefault();
-        const newBook = {
-            ID: null,
-            NAME: book.NAME,
-            CATEGORY_ID: book.CATEGORY_ID,
-            ON_SALE: book.ON_SALE,
-        };
-        api
-            .post("/addbook", newBook)
-            .catch((e) => console.log(e))
-            .finally(() => {
-                fetchBooks();
-                setOpenAdd(false);
-                setBook(Book());
-            });
+    const handleChangePriceBar = (event: Event, newValue: number[]) => {
+        setPriceBarValue(newValue);
+        setCustomSearchInfo({...customSearchInfo, min_price: newValue[0], max_price: newValue[1] });
     };
+    const handleCustomSearch = (e: React.FormEvent) => {
+        e.preventDefault()
+
+    }
 
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -145,12 +155,104 @@ export default function TabbleManager() {
     return (
         <Box sx={{ p: 3 }}>
             {/* Header */}
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Typography variant="h5">Book List</Typography>
-                <Button variant="contained" onClick={() => setOpenAdd(true)}>
-                    Add Book
-                </Button>
+                <Box sx={{ display: "flex", gap: 2 }}>
+                    {!openCustomSearch && (
+                        <>
+                            <TextField
+                                size="small"
+                                placeholder="Search by name or category..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <IconButton
+                                color="primary"
+                                onClick={() => {
+                                    fetchBooks();
+                                    console.log("Searching for:", searchTerm);
+                                }}
+                            >
+                                <SearchIcon />
+                            </IconButton>
+                        </>
+                    )}
+                    <Button variant="contained" onClick={(e) => {setOpenCustomSearch(!openCustomSearch)}}>
+                        Custom search
+                    </Button>
+                    <Button variant="contained" onClick={() => setOpenAdd(true)}>
+                        Add Book
+                    </Button>
+
+                </Box>
             </Box>
+
+            {openCustomSearch && (
+                <Box
+                    component="form"
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 2,
+                        mb: 3,
+                        maxWidth: 650,   // độ rộng tối đa của form
+                        mx: "left",      // căn giữa theo chiều ngang
+                    }}
+                >
+                    {/* Hàng 1: Tên sách, Category, Author */}
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        <TextField name="name" label="ID" required onChange={
+                            (e) => setCustomSearchInfo({...customSearchInfo, id: Number(e.target.value)})
+                        } />
+                        <TextField name="name" label="Book Name" required fullWidth onChange={
+                            (e) => setCustomSearchInfo({...customSearchInfo, name: e.target.value})
+                        } />
+
+                        <TextField name="author" label="Author" fullWidth />
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1, maxWidth: 200 }}>
+                        <Select
+                            value={customSearchInfo.category_id || ''}
+                            label="Category"
+                            onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, category_id: Number(e.target.value) })}
+                        >
+                            {categoryList.map((category) => (
+                                <MenuItem key={category.ID} value={category.ID}>
+                                    {category.NAME}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    {/* Hàng 2: OnSale, Price, Discount */}
+                    <Box sx={{ display: "flex", gap: 1, maxWidth: 100}}>
+                        <TextField name="onsale" label="On Sale (0/1)" type="number" required fullWidth />
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1, maxWidth: 500}}>
+                        <TextField name="price" label="Min Price" type="number" required value ={priceBarValue[0]}
+                            onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[0]])}
+                        />
+                        <Slider
+                            getAriaLabel={() => 'Temperature range'}
+                            value={priceBarValue}
+                            onChange={handleChangePriceBar}
+                            valueLabelDisplay="auto"
+                        />
+                        <TextField name="price" label="Max Price" type="number" required value ={priceBarValue[1]}
+                                   onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[1]])}
+
+                        />
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1, maxWidth: 300}}>
+                        <TextField name="discount" label="Discount" type="number" fullWidth />
+                    </Box>
+                    {/* Hàng 3: Nút Search */}
+                    <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+                        <Button type="submit" variant="contained" color="primary">
+                            Search
+                        </Button>
+                    </Box>
+                </Box>
+            )}
 
             {/* Bảng danh sách sách */}
             <TableContainer component={Paper}>
@@ -201,47 +303,28 @@ export default function TabbleManager() {
                 </Table>
             </TableContainer>
 
-            {/* Dialog thêm sách */}
-            {/*<Dialog open={openAdd} onClose={() => setOpenAdd(false)} fullWidth maxWidth="sm">*/}
-            {/*    <DialogTitle>Add New Book</DialogTitle>*/}
-            {/*    <Box component="form" onSubmit={handleAdd}>*/}
-            {/*        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>*/}
-            {/*            <TextField*/}
-            {/*                label="Name"*/}
-            {/*                value={book.NAME}*/}
-            {/*                onChange={(e) => setBook({ ...book, NAME: e.target.value })}*/}
-            {/*                required*/}
-            {/*                fullWidth*/}
-            {/*            />*/}
-            {/*            <TextField*/}
-            {/*                label="Category"*/}
-            {/*                value={book.CATEGORY_ID}*/}
-            {/*                onChange={(e) => setBook({ ...book, CATEGORY_ID: Number(e.target.value) })}*/}
-            {/*                required*/}
-            {/*                fullWidth*/}
-            {/*            />*/}
-            {/*            <TextField*/}
-            {/*                label="On Sale (0 or 1)"*/}
-            {/*                type="number"*/}
-            {/*                value={book.ON_SALE}*/}
-            {/*                onChange={(e) =>*/}
-            {/*                    setBook({ ...book, ON_SALE: Number(e.target.value) })*/}
-            {/*                }*/}
-            {/*                required*/}
-            {/*                fullWidth*/}
-            {/*            />*/}
-            {/*        </DialogContent>*/}
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 2, gap: 2 }}>
+                <IconButton
+                    disabled={page === 1}
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                >
+                    &lt;
+                </IconButton>
 
-            {/*        <DialogActions>*/}
-            {/*            <Button onClick={() => setOpenAdd(false)} color="secondary">*/}
-            {/*                Cancel*/}
-            {/*            </Button>*/}
-            {/*            <Button type="submit" variant="contained" color="primary">*/}
-            {/*                Save*/}
-            {/*            </Button>*/}
-            {/*        </DialogActions>*/}
-            {/*    </Box>*/}
-            {/*</Dialog>*/}
+                <Box sx={{ border: "1px solid black", px: 2, py: 1 }}>{page}</Box>
+
+                <IconButton
+                    onClick={() => setPage((prev) => prev + 1)}
+                >
+                    &gt;
+                </IconButton>
+            </Box>
+
+            <AddBookDialog
+                state={openAdd}
+                onClose={handleClose}
+                onSuccess={fetchBooks}
+            />
 
             {/* Dialog chi tiết/chỉnh sửa sách */}
             <Dialog open={openDetail} onClose={() => {setOpenDetail(false); setBookDetail(null)}} fullWidth maxWidth="sm">

@@ -1,7 +1,6 @@
 export interface Book{
     ID: number;
     NAME: string;
-    NUMBER_OF_PAGE: number;
     ON_SALE: number;
     PRICE: number;
     DISCOUNT: number;
@@ -16,7 +15,6 @@ export function Book()
     return {
         ID: 0,
         NAME: "",
-        NUMBER_OF_PAGE: 0,
         ON_SALE: 0,
         PRICE: 0,
         DISCOUNT: 0,
