@@ -22,7 +22,8 @@ import {
     Typography
 } from "@mui/material";
 import AddBookDialog from "@/app/admin/(components)/AddBookDialog";
-import {CustomSearchInfo} from "@/lib/interface/BookInfo";
+import CustomSearch from "@/app/admin/(components)/CustomSearch";
+import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
 
 interface TabbleRow{
     ID: number,
@@ -56,18 +57,15 @@ interface UpdatedBook {
 
 export default function TabbleManager() {
     const [tableList, setTableList] = useState<TabbleRow[]>([]);
-    const [categoryList, setCategoryList] = useState<{ID: number, NAME: string}[]>([]);
 
-    // const [book, setBook] = useState<Book>(Book());
 
 
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
     const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null);
-    const [customSearchInfo, setCustomSearchInfo] = useState(
+    const [searchBookInfo, setSearchBookInfo] = useState<customSearchInfo>(
         CustomSearchInfo()
     );
-    const [priceBarValue, setPriceBarValue] = useState<number[]>([customSearchInfo.min_price, customSearchInfo.max_price]);
 
     const [openCustomSearch, setOpenCustomSearch] = useState(false);
     const [openAdd, setOpenAdd] = useState(false);
@@ -91,9 +89,6 @@ export default function TabbleManager() {
                 console.error("There was an error!", error);
                 window.alert("Can not connect to server, Please try again later!");
             });
-        api.get("/getallcategory").then((res) => {
-            setCategoryList(res.data);
-        });
     };
 
     const getOneBook = (id: number) => {
@@ -102,7 +97,6 @@ export default function TabbleManager() {
             setBookDetail(response1.data);
         }).catch((error) => {console.log(error)})
     }
-
 
     const handleDelete = (id: number) => {
         if (window.confirm("Are you sure you want to delete this book?")) {
@@ -117,13 +111,15 @@ export default function TabbleManager() {
         }
     };
 
-    const handleChangePriceBar = (event: Event, newValue: number[]) => {
-        setPriceBarValue(newValue);
-        setCustomSearchInfo({...customSearchInfo, min_price: newValue[0], max_price: newValue[1] });
-    };
-    const handleCustomSearch = (e: React.FormEvent) => {
-        e.preventDefault()
 
+    const handleCustomSearch = (inputInfo : customSearchInfo ) => {
+        console.log("Custom search with info:", inputInfo);
+        api.post("/customSearch", inputInfo)
+        .then((response) => {
+            setTableList(response.data);
+        }).catch((error) => {
+            console.error("There was an error!", error);
+        });
     }
 
     const handleUpdate = (e: React.FormEvent) => {
@@ -187,72 +183,10 @@ export default function TabbleManager() {
                 </Box>
             </Box>
 
-            {openCustomSearch && (
-                <Box
-                    component="form"
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 2,
-                        mb: 3,
-                        maxWidth: 650,   // độ rộng tối đa của form
-                        mx: "left",      // căn giữa theo chiều ngang
-                    }}
-                >
-                    {/* Hàng 1: Tên sách, Category, Author */}
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                        <TextField name="name" label="ID" required onChange={
-                            (e) => setCustomSearchInfo({...customSearchInfo, id: Number(e.target.value)})
-                        } />
-                        <TextField name="name" label="Book Name" required fullWidth onChange={
-                            (e) => setCustomSearchInfo({...customSearchInfo, name: e.target.value})
-                        } />
-
-                        <TextField name="author" label="Author" fullWidth />
-                    </Box>
-                    <Box sx={{ display: "flex", gap: 1, maxWidth: 200 }}>
-                        <Select
-                            value={customSearchInfo.category_id || ''}
-                            label="Category"
-                            onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, category_id: Number(e.target.value) })}
-                        >
-                            {categoryList.map((category) => (
-                                <MenuItem key={category.ID} value={category.ID}>
-                                    {category.NAME}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </Box>
-                    {/* Hàng 2: OnSale, Price, Discount */}
-                    <Box sx={{ display: "flex", gap: 1, maxWidth: 100}}>
-                        <TextField name="onsale" label="On Sale (0/1)" type="number" required fullWidth />
-                    </Box>
-                    <Box sx={{ display: "flex", gap: 1, maxWidth: 500}}>
-                        <TextField name="price" label="Min Price" type="number" required value ={priceBarValue[0]}
-                            onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[0]])}
-                        />
-                        <Slider
-                            getAriaLabel={() => 'Temperature range'}
-                            value={priceBarValue}
-                            onChange={handleChangePriceBar}
-                            valueLabelDisplay="auto"
-                        />
-                        <TextField name="price" label="Max Price" type="number" required value ={priceBarValue[1]}
-                                   onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[1]])}
-
-                        />
-                    </Box>
-                    <Box sx={{ display: "flex", gap: 1, maxWidth: 300}}>
-                        <TextField name="discount" label="Discount" type="number" fullWidth />
-                    </Box>
-                    {/* Hàng 3: Nút Search */}
-                    <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-                        <Button type="submit" variant="contained" color="primary">
-                            Search
-                        </Button>
-                    </Box>
-                </Box>
-            )}
+            <CustomSearch
+                state={openCustomSearch}
+                onSearch={handleCustomSearch}
+            />
 
             {/* Bảng danh sách sách */}
             <TableContainer component={Paper}>

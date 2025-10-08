@@ -1,8 +1,35 @@
 'use client'
 import {Box, Button, MenuItem, Select, Slider, TextField} from "@mui/material";
+import {useEffect, useState} from "react";
+import api from "@/lib/features/api/axiosInterceptor";
+import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
 
-const CustomSearch = ()=>{
-    return(
+interface CustomSearchProps{
+    state: boolean;
+    onSearch: (customSearchInfo: customSearchInfo) => void;
+}
+
+const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
+    const [categoryList, setCategoryList] = useState<{ID: number, NAME: string}[]>([]);
+    const [customSearchInfo, setCustomSearchInfo] = useState(
+        CustomSearchInfo()
+    );
+    const [priceBarValue, setPriceBarValue] = useState<number[]>([0, 1000000]);
+    const PRICE_LIMIT = 1000000;
+
+    const handleChangePriceBar = (event: Event, newValue: number[]) => {
+        setPriceBarValue(newValue);
+        setCustomSearchInfo({...customSearchInfo, min_Price: newValue[0], max_Price: newValue[1] });
+    };
+
+    useEffect(() => {
+        api.get("/getallcategory").then((res) => {
+            setCategoryList(res.data);
+        });
+    }, []);
+
+    if (!state) return null;
+    return (
         <Box
             component="form"
             sx={{
@@ -23,13 +50,19 @@ const CustomSearch = ()=>{
                     (e) => setCustomSearchInfo({...customSearchInfo, name: e.target.value})
                 } />
 
-                <TextField name="author" label="Author" fullWidth />
+                <TextField
+                    name="author"
+                    label="Author"
+                    fullWidth
+                    value={customSearchInfo.author_Name}
+                    onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, author_Name: e.target.value })}
+                />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 200 }}>
                 <Select
-                    value={customSearchInfo.category_id || ''}
+                    value={customSearchInfo.category_Id || ''}
                     label="Category"
-                    onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, category_id: Number(e.target.value) })}
+                    onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, category_Id: Number(e.target.value) })}
                 >
                     {categoryList.map((category) => (
                         <MenuItem key={category.ID} value={category.ID}>
@@ -43,18 +76,28 @@ const CustomSearch = ()=>{
                 <TextField name="onsale" label="On Sale (0/1)" type="number" required fullWidth />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 500}}>
-                <TextField name="price" label="Min Price" type="number" required value ={priceBarValue[0]}
-                           onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[0]])}
+                <TextField
+                    label="Min Price"
+                    type="number"
+                    required
+                    value={priceBarValue[0]}
+                    onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[1]])}
                 />
                 <Slider
                     getAriaLabel={() => 'Temperature range'}
                     value={priceBarValue}
                     onChange={handleChangePriceBar}
                     valueLabelDisplay="auto"
+                    min = {10000}
+                    max = {PRICE_LIMIT}
+                    step = {10000}
                 />
-                <TextField name="price" label="Max Price" type="number" required value ={priceBarValue[1]}
-                           onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[1]])}
-
+                <TextField
+                    label="Max Price"
+                    type="number"
+                    required
+                    value={priceBarValue[1]}
+                    onChange={(e) => setPriceBarValue([priceBarValue[0], Number(e.target.value)])}
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 300}}>
@@ -62,10 +105,20 @@ const CustomSearch = ()=>{
             </Box>
             {/* Hàng 3: Nút Search */}
             <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-                <Button type="submit" variant="contained" color="primary">
+                <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onSearch(customSearchInfo);
+                    }}
+                >
                     Search
                 </Button>
             </Box>
         </Box>
     )
 }
+
+export default CustomSearch;
