@@ -1,7 +1,7 @@
 'use client';
 
 import api from "@/lib/features/api/axiosInterceptor";
-import { useEffect, useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import { Book } from "@/lib/interface/book";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -63,9 +63,9 @@ export default function TabbleManager() {
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
     const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null);
-    const [searchBookInfo, setSearchBookInfo] = useState<customSearchInfo>(
-        CustomSearchInfo()
-    );
+
+
+    const searchBookInfo = useRef(CustomSearchInfo());
 
     const [openCustomSearch, setOpenCustomSearch] = useState(false);
     const [openAdd, setOpenAdd] = useState(false);
@@ -78,7 +78,7 @@ export default function TabbleManager() {
     useEffect(() => {
         if(!openCustomSearch)
             fetchBooks();
-        else handleCustomSearch(searchBookInfo);
+        else handleCustomSearch(searchBookInfo.current);
     }, [page]);
 
     const fetchBooks = () => {
@@ -113,11 +113,10 @@ export default function TabbleManager() {
         }
     };
 
-    const handleSearchInfo = (inputInfo : customSearchInfo) => {
-        setSearchBookInfo(inputInfo);
-    }
 
     const handleCustomSearch = (inputInfo : customSearchInfo ) => {
+
+        searchBookInfo.current  = inputInfo ;
         console.log("Custom search with info:", inputInfo);
         api.post(`/customSearch?page=${page}`, inputInfo)
         .then((response) => {
