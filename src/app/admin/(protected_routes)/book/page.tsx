@@ -22,6 +22,7 @@ import {
     Typography
 } from "@mui/material";
 import AddBookDialog from "@/app/admin/(components)/AddBookDialog";
+import BookDetailDialog from "@/app/admin/(components)/BookDetailDialog";
 import CustomSearch from "@/app/admin/(components)/CustomSearch";
 import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
 
@@ -62,8 +63,7 @@ export default function TabbleManager() {
 
     // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
-    const [bookDetail, setBookDetail] = useState<DisplayBookDetail | null>(null);
-
+    const [bookDetailId, setBookDetailId] = useState<number>(-1);
 
     const searchBookInfo = useRef(CustomSearchInfo());
 
@@ -73,13 +73,32 @@ export default function TabbleManager() {
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
 
-    const handleClose = () => setOpenAdd(false);
+    const handleCloseAddDialog = () => setOpenAdd(false);
+
+    const handleCloseDetailDialog = () => {
+        setOpenDetail(false);
+        setBookDetailId(-1)
+    }
+    const handleAfterUpdate = (result : boolean) => {
+        if(result) {
+            alert("Book update successfully!");
+        }
+        else {
+            alert("Can not update book!");
+        }
+        setOpenDetail(false);
+        setBookDetailId(-1);
+        fetchBooks();
+    }
+
+
 
     useEffect(() => {
         if(!openCustomSearch)
             fetchBooks();
         else handleCustomSearch(searchBookInfo.current);
     }, [page]);
+
 
     const fetchBooks = () => {
         api
@@ -92,13 +111,6 @@ export default function TabbleManager() {
                 window.alert("Can not connect to server, Please try again later!");
             });
     };
-
-    const getOneBook = (id: number) => {
-        api.get(`/getbook/${id}`).then((response1) => {
-            console.log(response1.data);
-            setBookDetail(response1.data);
-        }).catch((error) => {console.log(error)})
-    }
 
     const handleDelete = (id: number) => {
         if (window.confirm("Are you sure you want to delete this book?")) {
@@ -126,31 +138,6 @@ export default function TabbleManager() {
         });
     }
 
-    const handleUpdate = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!bookDetail) return;
-
-        const updatedBook: UpdatedBook = {
-            Id: bookDetail.ID,
-            NAME: bookDetail.NAME,
-            DESCRIPTION: bookDetail.DESCRIPTION,
-            ON_SALE: bookDetail.ON_SALE,
-            PRICE: bookDetail.PRICE,
-            DISCOUNT: bookDetail.DISCOUNT
-        }
-
-        api
-            .put(`/updatebook/`, updatedBook )
-            .then((response) => {
-                console.log("Response from server:", response.data);
-            })
-            .catch((e) => console.log(e))
-            .finally(() => {
-                fetchBooks();
-                setOpenDetail(false);
-                setBookDetail(null);
-            });
-    };
 
     return (
         <Box sx={{ p: 3 }}>
@@ -220,7 +207,7 @@ export default function TabbleManager() {
                                         size="small"
                                         sx={{ mr: 1 }}
                                         onClick={() => {
-                                            getOneBook(b.ID);
+                                            setBookDetailId(b.ID);
                                             setOpenDetail(true);
                                         }}
                                     >
@@ -260,103 +247,18 @@ export default function TabbleManager() {
 
             <AddBookDialog
                 state={openAdd}
-                onClose={handleClose}
+                onClose={handleCloseAddDialog}
                 onSuccess={fetchBooks}
             />
 
-            {/* Dialog chi tiết/chỉnh sửa sách */}
-            <Dialog open={openDetail} onClose={() => {setOpenDetail(false); setBookDetail(null)}} fullWidth maxWidth="sm">
-                <DialogTitle>Edit Book</DialogTitle>
-                {bookDetail && (
-                    <Box component="form" onSubmit={handleUpdate}>
-                        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            <TextField
-                                label="ID"
-                                value={bookDetail.ID}
-                                disabled
-                                fullWidth
-                            />
-                            <TextField
-                                label="Name"
-                                value={bookDetail.NAME}
-                                onChange={(e) =>
-                                    setBookDetail({ ...bookDetail, NAME: e.target.value })
-                                }
-                                required
-                                fullWidth
-                            />
-                            <TextField
-                                label="Category"
-                                value={bookDetail.CATEGORY}
-                                disabled={true}
-                                fullWidth
-                            />
-                            <TextField
-                                label="Authors"
-                                value={bookDetail.AUTHORS}
-                                disabled={true}
-                                fullWidth
-                            />
-                            <TextField
-                                label="On Sale (0 or 1)"
-                                type="number"
-                                value={bookDetail.ON_SALE}
-                                onChange={(e) =>
-                                    setBookDetail({ ...bookDetail, ON_SALE: Number(e.target.value) })
-                                }
-                                required
-                                fullWidth
-                            />
-                            <TextField
-                                label="Price"
-                                type="number"
-                                value={bookDetail.PRICE}
-                                onChange={(e) =>
-                                    setBookDetail({ ...bookDetail, PRICE: Number(e.target.value) })
-                                }
-                                required
-                                fullWidth
-                            />
-                            <TextField
-                                label="Discount"
-                                type="number"
-                                value={bookDetail.DISCOUNT}
-                                onChange={(e) =>
-                                    setBookDetail({ ...bookDetail, DISCOUNT: Number(e.target.value) })
-                                }
-                                required
-                                fullWidth
-                            />
-                            <TextField
-                                label="Description"
-                                value={bookDetail.DESCRIPTION}
-                                onChange={(e) => setBookDetail({ ...bookDetail, DESCRIPTION: e.target.value })}
-                                required
-                                fullWidth
-                                multiline
-                                minRows={4}
-                            />
-                            <TextField
-                                label="Publish date"
-                                value={bookDetail.PUBLISHER_DATE}
-                                disabled={true}
-                                fullWidth
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => {
-                                setOpenDetail(false)
-                                setBookDetail(null)
-                            }} color="secondary">
-                                Cancel
-                            </Button>
-                            <Button type="submit" variant="contained" color="primary">
-                                Save Changes
-                            </Button>
-                        </DialogActions>
-                    </Box>
-                )}
-            </Dialog>
+             {/*Dialog chi tiết/chỉnh sửa sách */}
+            <BookDetailDialog
+                state = {openDetail}
+                onClose = {handleCloseDetailDialog}
+                onAfterUpdate = {handleAfterUpdate}
+                bookID = {bookDetailId}
+            />
+
         </Box>
     );
 }
