@@ -1,5 +1,5 @@
 'use client'
-import {Box, Button, MenuItem, Select, Slider, TextField} from "@mui/material";
+import {Box, Button, Checkbox, FormControlLabel, MenuItem, Select, Slider, TextField} from "@mui/material";
 import {useEffect, useState} from "react";
 import api from "@/lib/features/api/axiosInterceptor";
 import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
@@ -72,8 +72,21 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
                 </Select>
             </Box>
             {/* Hàng 2: OnSale, Price, Discount */}
-            <Box sx={{ display: "flex", gap: 1, maxWidth: 100}}>
-                <TextField name="onsale" label="On Sale (0/1)" type="number" required fullWidth />
+            <Box sx={{ display: "flex", alignItems: "center", maxWidth: 200 }}>
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={customSearchInfo.on_Sale === 1}
+                            onChange={(e) =>
+                                setCustomSearchInfo({
+                                    ...customSearchInfo,
+                                    on_Sale: e.target.checked ? 1 : 0,
+                                })
+                            }
+                        />
+                    }
+                    label="On Sale"
+                />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 500}}>
                 <TextField
@@ -101,7 +114,14 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 300}}>
-                <TextField name="discount" label="Discount" type="number" fullWidth />
+                <TextField
+                    name="discount"
+                    label="Discount"
+                    type="number"
+                    fullWidth
+                    value  = {customSearchInfo.discount}
+                    onChange={(e) => setCustomSearchInfo({...customSearchInfo, discount: Number(e.target.value)})}
+                />
             </Box>
             {/* Hàng 3: Nút Search */}
             <Box sx={{ display: "flex", justifyContent: "flex-start" }}>

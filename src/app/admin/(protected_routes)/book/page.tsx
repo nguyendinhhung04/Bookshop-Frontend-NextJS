@@ -76,7 +76,9 @@ export default function TabbleManager() {
     const handleClose = () => setOpenAdd(false);
 
     useEffect(() => {
-        fetchBooks();
+        if(!openCustomSearch)
+            fetchBooks();
+        else handleCustomSearch(searchBookInfo);
     }, [page]);
 
     const fetchBooks = () => {
@@ -111,10 +113,13 @@ export default function TabbleManager() {
         }
     };
 
+    const handleSearchInfo = (inputInfo : customSearchInfo) => {
+        setSearchBookInfo(inputInfo);
+    }
 
     const handleCustomSearch = (inputInfo : customSearchInfo ) => {
         console.log("Custom search with info:", inputInfo);
-        api.post("/customSearch", inputInfo)
+        api.post(`/customSearch?page=${page}`, inputInfo)
         .then((response) => {
             setTableList(response.data);
         }).catch((error) => {
