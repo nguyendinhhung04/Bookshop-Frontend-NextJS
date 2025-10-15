@@ -1,5 +1,16 @@
 'use client'
-import {Box, Button, Checkbox, FormControlLabel, MenuItem, Select, Slider, TextField} from "@mui/material";
+import {
+    Box,
+    Button,
+    Checkbox,
+    FormControl,
+    FormControlLabel,
+    InputLabel,
+    MenuItem,
+    Select,
+    Slider,
+    TextField
+} from "@mui/material";
 import {useEffect, useState} from "react";
 import api from "@/lib/features/api/axiosInterceptor";
 import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
@@ -10,7 +21,7 @@ interface CustomSearchProps{
 }
 
 const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
-    const [categoryList, setCategoryList] = useState<{ID: number, NAME: string}[]>([]);
+    const [categoryList, setCategoryList] = useState<{ID: number, NAME: string}[]>([{ID: -1, NAME: "Default(All)"}]);
     const [customSearchInfo, setCustomSearchInfo] = useState(
         CustomSearchInfo()
     );
@@ -24,7 +35,8 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
 
     useEffect(() => {
         api.get("/getallcategory").then((res) => {
-            setCategoryList(res.data);
+            console.log(res.data);
+            setCategoryList([...categoryList, ...res.data]); // ??????????????????????????????
         });
     }, []);
 
@@ -59,34 +71,40 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 200 }}>
-                <Select
-                    value={customSearchInfo.category_Id || ''}
-                    label="Category"
-                    onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, category_Id: Number(e.target.value) })}
-                >
-                    {categoryList.map((category) => (
-                        <MenuItem key={category.ID} value={category.ID}>
-                            {category.NAME}
-                        </MenuItem>
-                    ))}
-                </Select>
+               <FormControl fullWidth size="small" >
+                   <InputLabel>Category</InputLabel>
+                   <Select
+                       value={customSearchInfo.category_Id || ''}
+                       label="Category"
+                       onChange={(e) => setCustomSearchInfo({ ...customSearchInfo, category_Id: Number(e.target.value) })}
+                   >
+                       {categoryList.map((category) => (
+                           <MenuItem key={category.ID} value={category.ID}>
+                               {category.NAME}
+                           </MenuItem>
+                       ))}
+                   </Select>
+               </FormControl>
             </Box>
             {/* Hàng 2: OnSale, Price, Discount */}
             <Box sx={{ display: "flex", alignItems: "center", maxWidth: 200 }}>
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={customSearchInfo.on_Sale === 1}
-                            onChange={(e) =>
-                                setCustomSearchInfo({
-                                    ...customSearchInfo,
-                                    on_Sale: e.target.checked ? 1 : 0,
-                                })
-                            }
-                        />
-                    }
-                    label="On Sale"
-                />
+                <FormControl fullWidth size="small">
+                    <InputLabel>On Sale</InputLabel>
+                    <Select
+                        label="On Sale"
+                        value={customSearchInfo.on_Sale}
+                        onChange={(e) =>
+                            setCustomSearchInfo({
+                                ...customSearchInfo,
+                                on_Sale: e.target.value,
+                            })
+                        }
+                    >
+                        <MenuItem value={-1}>Default (All)</MenuItem>
+                        <MenuItem value={1}>Yes</MenuItem>
+                        <MenuItem value={0}>No</MenuItem>
+                    </Select>
+                </FormControl>
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 500}}>
                 <TextField
@@ -94,10 +112,12 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
                     type="number"
                     required
                     value={priceBarValue[0]}
-                    onChange={(e) => setPriceBarValue([Number(e.target.value), priceBarValue[1]])}
+                    onChange={(e) => {
+                        setPriceBarValue([Number(e.target.value), priceBarValue[1]])
+                        setCustomSearchInfo( {...customSearchInfo, min_Price : Number(e.target.value)})
+                    }}
                 />
                 <Slider
-                    getAriaLabel={() => 'Temperature range'}
                     value={priceBarValue}
                     onChange={handleChangePriceBar}
                     valueLabelDisplay="auto"
@@ -110,7 +130,10 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
                     type="number"
                     required
                     value={priceBarValue[1]}
-                    onChange={(e) => setPriceBarValue([priceBarValue[0], Number(e.target.value)])}
+                    onChange={(e) => {
+                        setPriceBarValue([priceBarValue[0], Number(e.target.value)])
+                        setCustomSearchInfo({...customSearchInfo, max_Price : Number(e.target.value)})
+                    }}
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1, maxWidth: 300}}>
@@ -131,6 +154,7 @@ const CustomSearch = ({state, onSearch} : CustomSearchProps)=>{
                     color="primary"
                     onClick={(e) => {
                         e.preventDefault();
+                        console.log(customSearchInfo);
                         onSearch(customSearchInfo);
                     }}
                 >
