@@ -27,14 +27,11 @@ import CustomSearch from "@/app/admin/(components)/CustomSearch";
 import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
 
 interface TabbleRow{
-    ID: number,
-    NAME: string,
-    CATEGORY: string,
-    ON_SALE: number,
-    PRICE: number
-}
-
-interface DisplayBookDetail {
+    // ID: number,
+    // NAME: string,
+    // CATEGORY: string,
+    // ON_SALE: number,
+    // PRICE: number
     ID: number;
     NAME: string;
     ON_SALE: number;
@@ -47,14 +44,6 @@ interface DisplayBookDetail {
     AUTHORS: string|null;
 }
 
-interface UpdatedBook {
-    Id: number;
-    NAME: string;
-    DESCRIPTION: string;
-    ON_SALE: number;
-    PRICE: number;
-    DISCOUNT: number;
-}
 
 export default function TabbleManager() {
     const [tableList, setTableList] = useState<TabbleRow[]>([]);
@@ -137,6 +126,37 @@ export default function TabbleManager() {
             console.error("There was an error!", error);
         });
     }
+
+    const handleGetXlsx = async () => {
+        try {
+            let searchInfo = CustomSearchInfo();
+
+            if (openCustomSearch) {
+                searchInfo = searchBookInfo.current;
+            } else {
+                searchInfo.name = searchTerm;
+            }
+
+            const res = await api.post("/getxlsx", searchInfo, {
+                responseType: "blob", // 👈 bắt buộc để nhận file binary
+            });
+
+            if (res.status === 200) {
+                // Tạo link tải file Excel
+                const url = window.URL.createObjectURL(new Blob([res.data]));
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "Books.xlsx"; // tên file tải về
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            }
+        } catch (error) {
+            console.error("Error exporting Excel:", error);
+            alert("Export failed!");
+        }
+    };
 
 
     return (
@@ -228,6 +248,17 @@ export default function TabbleManager() {
                 </Table>
             </TableContainer>
 
+            {/* Nút Export Excel */}
+            <Box sx={{ display: "flex", justifyContent: "right", mt: 2 }}>
+                <Button
+                    variant="contained"
+                    color="success"
+                    onClick={handleGetXlsx}
+                >
+                    Export Excel
+                </Button>
+            </Box>
+
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 2, gap: 2 }}>
                 <IconButton
                     disabled={page === 1}
@@ -244,6 +275,7 @@ export default function TabbleManager() {
                     &gt;
                 </IconButton>
             </Box>
+
 
             <AddBookDialog
                 state={openAdd}
