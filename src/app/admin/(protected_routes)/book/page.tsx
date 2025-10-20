@@ -4,14 +4,17 @@ import api from "@/lib/features/api/axiosInterceptor";
 import {useEffect, useRef, useState} from "react";
 import { Book } from "@/lib/interface/book";
 import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import {
     Box,
     Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle, IconButton, MenuItem,
-    Paper, Select, Slider,
+    IconButton,
+    Paper,
     Table,
     TableBody,
     TableCell,
@@ -19,19 +22,18 @@ import {
     TableHead,
     TableRow,
     TextField,
-    Typography
+    Typography,
+    Stack,
+    Chip,
+    Pagination,
+    Card
 } from "@mui/material";
 import AddBookDialog from "@/app/admin/(components)/AddBookDialog";
 import BookDetailDialog from "@/app/admin/(components)/BookDetailDialog";
 import CustomSearch from "@/app/admin/(components)/CustomSearch";
 import {customSearchInfo, CustomSearchInfo} from "@/lib/interface/CustomSearchInfo";
 
-interface TabbleRow{
-    // ID: number,
-    // NAME: string,
-    // CATEGORY: string,
-    // ON_SALE: number,
-    // PRICE: number
+interface TabbleRow {
     ID: number;
     NAME: string;
     ON_SALE: number;
@@ -44,23 +46,16 @@ interface TabbleRow{
     AUTHORS: string|null;
 }
 
-
 export default function TabbleManager() {
     const [tableList, setTableList] = useState<TabbleRow[]>([]);
-
-
-
-    // state cho dialog chi tiết/chỉnh sửa
     const [openDetail, setOpenDetail] = useState(false);
     const [bookDetailId, setBookDetailId] = useState<number>(-1);
-
     const searchBookInfo = useRef(CustomSearchInfo());
-
     const [openCustomSearch, setOpenCustomSearch] = useState(false);
     const [openAdd, setOpenAdd] = useState(false);
-
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
 
     const handleCloseAddDialog = () => setOpenAdd(false);
 
@@ -68,28 +63,28 @@ export default function TabbleManager() {
         setOpenDetail(false);
         setBookDetailId(-1)
     }
-    const handleAfterUpdate = (result : boolean) => {
-        if(result) {
-            alert("Book update successfully!");
-        }
-        else {
-            alert("Can not update book!");
+
+    const handleAfterUpdate = (result: boolean) => {
+        if (result) {
+            alert("Book updated successfully!");
+        } else {
+            alert("Failed to update book!");
         }
         setOpenDetail(false);
         setBookDetailId(-1);
         fetchBooks();
     }
 
-
-
     useEffect(() => {
-        if(!openCustomSearch)
+        if (!openCustomSearch) {
             fetchBooks();
-        else handleCustomSearch(searchBookInfo.current);
+        } else {
+            handleCustomSearch(searchBookInfo.current);
+        }
     }, [page]);
 
-
     const fetchBooks = () => {
+        setLoading(true);
         api
             .get(`/getallbooks?name=${searchTerm}&page=${page}`)
             .then((response) => {
@@ -97,200 +92,300 @@ export default function TabbleManager() {
             })
             .catch((error) => {
                 console.error("There was an error!", error);
-                window.alert("Can not connect to server, Please try again later!");
-            });
+                alert("Cannot connect to server. Please try again later!");
+            })
+            .finally(() => setLoading(false));
     };
 
-    const handleDelete = (id: number) => {
-        if (window.confirm("Are you sure you want to delete this book?")) {
+    const handleDelete = (id: number, name: string) => {
+        if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
             api
                 .delete(`/deletebook/${id}`)
                 .then(() => {
+                    alert("Book deleted successfully!");
                     fetchBooks();
                 })
                 .catch((error) => {
                     console.error("Delete failed!", error);
+                    alert("Failed to delete book!");
                 });
         }
     };
 
-
-    const handleCustomSearch = (inputInfo : customSearchInfo ) => {
-
-        searchBookInfo.current  = inputInfo ;
-        console.log("Custom search with info:", inputInfo);
-        api.post(`/customSearch?page=${page}`, inputInfo)
-        .then((response) => {
-            setTableList(response.data);
-        }).catch((error) => {
-            console.error("There was an error!", error);
-        });
+    const handleCustomSearch = (inputInfo: customSearchInfo) => {
+        searchBookInfo.current = inputInfo;
+        setPage(1);
+        setLoading(true);
+        api.post(`/customSearch?page=1`, inputInfo)
+            .then((response) => {
+                setTableList(response.data);
+            })
+            .catch((error) => {
+                console.error("Search error:", error);
+                alert("Search failed!");
+            })
+            .finally(() => setLoading(false));
     }
 
     const handleGetXlsx = async () => {
         try {
             let searchInfo = CustomSearchInfo();
-
             if (openCustomSearch) {
                 searchInfo = searchBookInfo.current;
             } else {
                 searchInfo.name = searchTerm;
             }
 
+            setLoading(true);
             const res = await api.post("/getxlsx", searchInfo, {
-                responseType: "blob", // 👈 bắt buộc để nhận file binary
+                responseType: "blob",
             });
 
             if (res.status === 200) {
-                // Tạo link tải file Excel
                 const url = window.URL.createObjectURL(new Blob([res.data]));
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "Books.xlsx"; // tên file tải về
+                a.download = `Books_${new Date().toISOString().split('T')[0]}.xlsx`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                alert("Export successful!");
             }
         } catch (error) {
-            console.error("Error exporting Excel:", error);
+            console.error("Export error:", error);
             alert("Export failed!");
+        } finally {
+            setLoading(false);
         }
     };
 
-
     return (
-        <Box sx={{ p: 3 }}>
-            {/* Header */}
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <Typography variant="h5">Book List</Typography>
-                <Box sx={{ display: "flex", gap: 2 }}>
-                    {!openCustomSearch && (
-                        <>
+        <Box sx={{ p: { xs: 1.5, sm: 3 } }}>
+            {/* Header Section */}
+            <Card
+                elevation={0}
+                sx={{
+                    p: 2.5,
+                    mb: 3,
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    color: "white",
+                    borderRadius: 2
+                }}
+            >
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+                    <Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                            📚 Book Management
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                            Manage your book inventory
+                        </Typography>
+                    </Box>
+
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignSelf: "flex-end" }}>
+                        {!openCustomSearch && (
                             <TextField
                                 size="small"
-                                placeholder="Search by name or category..."
+                                placeholder="Search books..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            <IconButton
-                                color="primary"
-                                onClick={() => {
-                                    fetchBooks();
-                                    console.log("Searching for:", searchTerm);
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter') fetchBooks();
                                 }}
-                            >
-                                <SearchIcon />
-                            </IconButton>
-                        </>
-                    )}
-                    <Button variant="contained" onClick={(e) => {setOpenCustomSearch(!openCustomSearch)}}>
-                        Custom search
-                    </Button>
-                    <Button variant="contained" onClick={() => setOpenAdd(true)}>
-                        Add Book
-                    </Button>
+                                sx={{
+                                    backgroundColor: "rgba(255,255,255,0.9)",
+                                    borderRadius: 1,
+                                    minWidth: 200
+                                }}
+                                InputProps={{
+                                    startAdornment: <SearchIcon sx={{ mr: 1, color: "#667eea" }} />
+                                }}
+                            />
+                        )}
 
+                        <Button
+                            variant={openCustomSearch ? "contained" : "outlined"}
+                            onClick={() => setOpenCustomSearch(!openCustomSearch)}
+                            sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                                color: openCustomSearch ? "white" : "white",
+                                borderColor: "rgba(255,255,255,0.5)",
+                                backgroundColor: openCustomSearch ? "rgba(255,255,255,0.2)" : "transparent"
+                            }}
+                        >
+                            Advanced Search
+                        </Button>
+
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => setOpenAdd(true)}
+                            sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                                backgroundColor: "rgba(255,255,255,0.2)",
+                                "&:hover": {
+                                    backgroundColor: "rgba(255,255,255,0.3)"
+                                }
+                            }}
+                        >
+                            Add Book
+                        </Button>
+                    </Stack>
                 </Box>
-            </Box>
+            </Card>
 
+            {/* Custom Search Section */}
             <CustomSearch
                 state={openCustomSearch}
                 onSearch={handleCustomSearch}
             />
 
-            {/* Bảng danh sách sách */}
-            <TableContainer component={Paper}>
+            {/* Table Section */}
+            <TableContainer component={Paper} sx={{ mb: 3, boxShadow: 2 }}>
                 <Table>
                     <TableHead>
-                        <TableRow>
-                            <TableCell>ID</TableCell>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Category</TableCell>
-                            <TableCell>On Sale</TableCell>
-                            <TableCell>Price</TableCell>
-                            <TableCell>Actions</TableCell>
+                        <TableRow sx={{ backgroundColor: "#f8f9fa" }}>
+                            <TableCell sx={{ fontWeight: 700, color: "#495057" }}>ID</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: "#495057" }}>Book Name</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: "#495057" }}>Category</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, color: "#495057" }}>Status</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, color: "#495057" }}>Price</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700, color: "#495057" }}>Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {tableList.map((b) => (
-                            <TableRow key={b.ID}>
-                                <TableCell>{b.ID}</TableCell>
-                                <TableCell>{b.NAME}</TableCell>
-                                <TableCell>{b.CATEGORY}</TableCell>
-                                <TableCell>{b.ON_SALE === 1 ? "Yes" : "No"}</TableCell>
-                                <TableCell>{b.PRICE}</TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="outlined"
-                                        color="primary"
-                                        size="small"
-                                        sx={{ mr: 1 }}
-                                        onClick={() => {
-                                            setBookDetailId(b.ID);
-                                            setOpenDetail(true);
-                                        }}
-                                    >
-                                        View / Edit
-                                    </Button>
-                                    <Button
-                                        variant="contained"
-                                        color="error"
-                                        size="small"
-                                        onClick={() => handleDelete(b.ID)}
-                                    >
-                                        Delete
-                                    </Button>
+                        {tableList.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                    <Typography color="textSecondary">
+                                        No books found
+                                    </Typography>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        ) : (
+                            tableList.map((b) => (
+                                <TableRow
+                                    key={b.ID}
+                                    sx={{
+                                        "&:hover": { backgroundColor: "#f8f9fa" },
+                                        borderBottom: "1px solid #e9ecef"
+                                    }}
+                                >
+                                    <TableCell sx={{ fontWeight: 500 }}>{b.ID}</TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, color: "#212529" }}>
+                                            {b.NAME}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={b.CATEGORY || "N/A"}
+                                            size="small"
+                                            variant="outlined"
+                                        />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Chip
+                                            label={b.ON_SALE === 1 ? "On Sale" : "Regular"}
+                                            size="small"
+                                            color={b.ON_SALE === 1 ? "success" : "default"}
+                                            variant={b.ON_SALE === 1 ? "filled" : "outlined"}
+                                        />
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ fontWeight: 600, color: "#667eea" }}>
+                                        ${b.PRICE.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell align="center">
+                                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                                            <IconButton
+                                                size="small"
+                                                color="primary"
+                                                onClick={() => {
+                                                    setBookDetailId(b.ID);
+                                                    setOpenDetail(true);
+                                                }}
+                                                title="Edit"
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => handleDelete(b.ID, b.NAME)}
+                                                title="Delete"
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Stack>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>
 
-            {/* Nút Export Excel */}
-            <Box sx={{ display: "flex", justifyContent: "right", mt: 2 }}>
+            {/* Action Buttons & Pagination */}
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3, justifyContent: "space-between", alignItems: "center" }}>
                 <Button
                     variant="contained"
                     color="success"
+                    startIcon={<CloudDownloadIcon />}
                     onClick={handleGetXlsx}
+                    disabled={loading}
+                    sx={{ textTransform: "none", fontWeight: 600, flex: { xs: 1, sm: "auto" } }}
                 >
-                    Export Excel
+                    Export to Excel
                 </Button>
-            </Box>
 
-            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mt: 2, gap: 2 }}>
-                <IconButton
-                    disabled={page === 1}
-                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                >
-                    &lt;
-                </IconButton>
+                <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                    <IconButton
+                        size="small"
+                        onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                        disabled={page === 1 || loading}
+                    >
+                        <KeyboardArrowLeftIcon />
+                    </IconButton>
 
-                <Box sx={{ border: "1px solid black", px: 2, py: 1 }}>{page}</Box>
+                    <Box sx={{
+                        px: 2,
+                        py: 0.75,
+                        border: "1px solid #dee2e6",
+                        borderRadius: 1,
+                        fontWeight: 600,
+                        backgroundColor: "#f8f9fa",
+                        minWidth: 50,
+                        textAlign: "center"
+                    }}>
+                        {page}
+                    </Box>
 
-                <IconButton
-                    onClick={() => setPage((prev) => prev + 1)}
-                >
-                    &gt;
-                </IconButton>
-            </Box>
+                    <IconButton
+                        size="small"
+                        onClick={() => setPage(prev => prev + 1)}
+                        disabled={loading || tableList.length === 0}
+                    >
+                        <KeyboardArrowRightIcon />
+                    </IconButton>
+                </Stack>
+            </Stack>
 
-
+            {/* Dialogs */}
             <AddBookDialog
                 state={openAdd}
                 onClose={handleCloseAddDialog}
                 onSuccess={fetchBooks}
             />
 
-             {/*Dialog chi tiết/chỉnh sửa sách */}
             <BookDetailDialog
-                state = {openDetail}
-                onClose = {handleCloseDetailDialog}
-                onAfterUpdate = {handleAfterUpdate}
-                bookID = {bookDetailId}
+                state={openDetail}
+                onClose={handleCloseDetailDialog}
+                onAfterUpdate={handleAfterUpdate}
+                bookID={bookDetailId}
             />
-
         </Box>
     );
 }
