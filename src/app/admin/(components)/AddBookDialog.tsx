@@ -32,8 +32,8 @@ interface AddBookDialogProps {
 interface NewBook {
     NAME: string;
     ON_SALE: number;
-    PRICE?: number;
-    DISCOUNT?: number;
+    PRICE: number;
+    DISCOUNT: number;
     DESCRIPTION: string;
     COVER_URL?: string;
     CATEGORY_ID: number | null;
@@ -45,8 +45,8 @@ function NewBook(): NewBook {
     return {
         NAME: "",
         ON_SALE: 0,
-        PRICE: undefined,
-        DISCOUNT: undefined,
+        PRICE: 0,
+        DISCOUNT: 0,
         DESCRIPTION: "",
         COVER_URL: "",
         CATEGORY_ID: null,
@@ -205,14 +205,38 @@ const AddBookDialog = ({state, onClose, onSuccess}: AddBookDialogProps) => {
                             <TextField
                                 label="Discount"
                                 type="number"
-                                value={book.DISCOUNT || ""}
+                                value={book.DISCOUNT}
                                 onChange={(e) => setBook({ ...book, DISCOUNT: Number(e.target.value) })}
                                 error={!!errors.discount}
                                 helperText={errors.discount}
-                                inputProps={{ min: 0, max: 100, step: "1" }}
                                 disabled={book.ON_SALE === 0}
                             />
                         </Box>
+
+                        <Box
+                            sx={{
+                                mt: 1,
+                                p: 1.5,
+                                backgroundColor: "#f9f9f9",
+                                borderRadius: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-start",
+                                gap: 0.5,
+                                fontSize: "0.95rem"
+                            }}
+                        >
+                            <Box sx={{ color: "#888" }}>
+                                Giá gốc: {book.PRICE.toLocaleString()} VND
+                            </Box>
+                            <Box sx={{ color: "#d32f2f", fontWeight: 600 }}>
+                                Giảm giá: {book.DISCOUNT}%
+                            </Box>
+                            <Box sx={{ color: "#2e7d32", fontWeight: 700, fontSize: "1.1rem" }}>
+                                Giá chính thức: {(book.PRICE * (1 - book.DISCOUNT / 100)).toLocaleString()} VND
+                            </Box>
+                        </Box>
+
                     </Stack>
 
                     {/* Description */}

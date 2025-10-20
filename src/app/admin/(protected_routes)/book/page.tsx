@@ -296,7 +296,7 @@ export default function TabbleManager() {
                                         />
                                     </TableCell>
                                     <TableCell align="right" sx={{ fontWeight: 600, color: "#667eea" }}>
-                                        ${b.PRICE.toLocaleString()}
+                                        {(b.PRICE*b.DISCOUNT/100).toLocaleString()} VND
                                     </TableCell>
                                     <TableCell align="center">
                                         <Stack direction="row" spacing={0.5} justifyContent="center">

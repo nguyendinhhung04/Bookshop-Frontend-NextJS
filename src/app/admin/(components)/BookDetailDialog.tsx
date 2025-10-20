@@ -218,12 +218,12 @@ const BookDetailDialog = ({state, onClose, onAfterUpdate, bookID}: BookDetailPro
 
                         <Stack direction="row" spacing={1.5} sx={{ mb: 1.5 }}>
                             <TextField
-                                label="Price *"
+                                label="Giá gốc (VND) *"
                                 type="number"
                                 value={bookDetail.PRICE}
                                 onChange={(e) => {
                                     setBookDetail({ ...bookDetail, PRICE: Number(e.target.value) });
-                                    if (errors.price) setErrors(prev => ({...prev, price: ""}));
+                                    if (errors.price) setErrors(prev => ({ ...prev, price: "" }));
                                 }}
                                 fullWidth
                                 error={!!errors.price}
@@ -232,12 +232,12 @@ const BookDetailDialog = ({state, onClose, onAfterUpdate, bookID}: BookDetailPro
                             />
 
                             <TextField
-                                label="Discount"
+                                label="% Giảm giá"
                                 type="number"
                                 value={bookDetail.DISCOUNT}
                                 onChange={(e) => {
                                     setBookDetail({ ...bookDetail, DISCOUNT: Number(e.target.value) });
-                                    if (errors.discount) setErrors(prev => ({...prev, discount: ""}));
+                                    if (errors.discount) setErrors(prev => ({ ...prev, discount: "" }));
                                 }}
                                 fullWidth
                                 error={!!errors.discount}
@@ -246,6 +246,31 @@ const BookDetailDialog = ({state, onClose, onAfterUpdate, bookID}: BookDetailPro
                                 disabled={bookDetail.ON_SALE === 0}
                             />
                         </Stack>
+
+                        {/* Hiển thị giá sau khi giảm */}
+                        <Box
+                            sx={{
+                                mt: 1,
+                                p: 1.5,
+                                backgroundColor: "#f9f9f9",
+                                borderRadius: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-start",
+                                gap: 0.5,
+                                fontSize: "0.95rem"
+                            }}
+                        >
+                            <Box sx={{ color: "#888" }}>
+                                Giá gốc: {bookDetail.PRICE.toLocaleString()} VND
+                            </Box>
+                            <Box sx={{ color: "#d32f2f", fontWeight: 600 }}>
+                                Giảm giá: {bookDetail.DISCOUNT}%
+                            </Box>
+                            <Box sx={{ color: "#2e7d32", fontWeight: 700, fontSize: "1.1rem" }}>
+                                Giá chính thức: {(bookDetail.PRICE * (1 - bookDetail.DISCOUNT / 100)).toLocaleString()} VND
+                            </Box>
+                        </Box>
                     </Box>
 
                     <Divider />
