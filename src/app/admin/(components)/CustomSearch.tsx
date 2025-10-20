@@ -20,7 +20,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 
 interface CustomSearchProps {
     state: boolean;
-    onSearch: (customSearchInfo: customSearchInfo) => void;
+    onSearch: (customSearchInfo: customSearchInfo, input_page: number) => void;
 }
 
 const CustomSearch = ({state, onSearch}: CustomSearchProps) => {
@@ -46,7 +46,7 @@ const CustomSearch = ({state, onSearch}: CustomSearchProps) => {
     };
 
     const handleSearch = () => {
-        onSearch(customSearchInfo);
+        onSearch(customSearchInfo, 1);
     };
 
     if (!state) return null;

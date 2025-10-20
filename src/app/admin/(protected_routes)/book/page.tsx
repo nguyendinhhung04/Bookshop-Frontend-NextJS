@@ -55,6 +55,7 @@ export default function TabbleManager() {
     const [openAdd, setOpenAdd] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
+    const pageRef = useRef(1);
     const [loading, setLoading] = useState(false);
 
     const handleCloseAddDialog = () => setOpenAdd(false);
@@ -72,21 +73,17 @@ export default function TabbleManager() {
         }
         setOpenDetail(false);
         setBookDetailId(-1);
-        fetchBooks();
+        fetchBooks(pageRef.current);
     }
 
     useEffect(() => {
-        if (!openCustomSearch) {
-            fetchBooks();
-        } else {
-            handleCustomSearch(searchBookInfo.current);
-        }
-    }, [page]);
+        fetchBooks(pageRef.current);
+    }, []);
 
-    const fetchBooks = () => {
+    const fetchBooks = (input_page : number) => {
         setLoading(true);
         api
-            .get(`/getallbooks?name=${searchTerm}&page=${page}`)
+            .get(`/getallbooks?name=${searchTerm}&page=${input_page}`)
             .then((response) => {
                 setTableList(response.data);
             })
@@ -103,7 +100,7 @@ export default function TabbleManager() {
                 .delete(`/deletebook/${id}`)
                 .then(() => {
                     alert("Book deleted successfully!");
-                    fetchBooks();
+                    fetchBooks(pageRef.current);
                 })
                 .catch((error) => {
                     console.error("Delete failed!", error);
@@ -112,11 +109,10 @@ export default function TabbleManager() {
         }
     };
 
-    const handleCustomSearch = (inputInfo: customSearchInfo) => {
+    const handleCustomSearch = (inputInfo: customSearchInfo, input_page:number) => {
         searchBookInfo.current = inputInfo;
-        setPage(1);
         setLoading(true);
-        api.post(`/customSearch?page=1`, inputInfo)
+        api.post(`/customSearch?page=${input_page}`, inputInfo)
             .then((response) => {
                 setTableList(response.data);
             })
@@ -125,6 +121,14 @@ export default function TabbleManager() {
                 alert("Search failed!");
             })
             .finally(() => setLoading(false));
+    }
+
+    const handleChangePage = ()=>{
+        if (openCustomSearch) {
+            handleCustomSearch(searchBookInfo.current, pageRef.current);
+        } else {
+            fetchBooks(pageRef.current);
+        }
     }
 
     const handleGetXlsx = async () => {
@@ -190,8 +194,12 @@ export default function TabbleManager() {
                                 placeholder="Search books..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter') fetchBooks();
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter'){
+                                        pageRef.current = 1;
+                                        setPage(pageRef.current);
+                                        fetchBooks(pageRef.current);
+                                    };
                                 }}
                                 sx={{
                                     backgroundColor: "rgba(255,255,255,0.9)",
@@ -296,7 +304,7 @@ export default function TabbleManager() {
                                         />
                                     </TableCell>
                                     <TableCell align="right" sx={{ fontWeight: 600, color: "#667eea" }}>
-                                        {(b.PRICE*b.DISCOUNT/100).toLocaleString()} VND
+                                        {(b.PRICE*(1-b.DISCOUNT/100.0)).toLocaleString()} VND
                                     </TableCell>
                                     <TableCell align="center">
                                         <Stack direction="row" spacing={0.5} justifyContent="center">
@@ -344,7 +352,11 @@ export default function TabbleManager() {
                 <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
                     <IconButton
                         size="small"
-                        onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                        onClick={() =>{
+                            pageRef.current = Math.max(1, pageRef.current - 1);
+                            setPage(pageRef.current);
+                            handleChangePage();
+                        }}
                         disabled={page === 1 || loading}
                     >
                         <KeyboardArrowLeftIcon />
@@ -365,7 +377,11 @@ export default function TabbleManager() {
 
                     <IconButton
                         size="small"
-                        onClick={() => setPage(prev => prev + 1)}
+                        onClick={() => {
+                            pageRef.current += 1;
+                            setPage(pageRef.current);
+                            handleChangePage();
+                        }}
                         disabled={loading || tableList.length === 0}
                     >
                         <KeyboardArrowRightIcon />
@@ -377,13 +393,19 @@ export default function TabbleManager() {
             <AddBookDialog
                 state={openAdd}
                 onClose={handleCloseAddDialog}
-                onSuccess={fetchBooks}
+                onSuccess={()=> {
+                    pageRef.current = 1;
+                    setPage(pageRef.current);
+                    fetchBooks(1);
+                }}
             />
 
             <BookDetailDialog
                 state={openDetail}
                 onClose={handleCloseDetailDialog}
-                onAfterUpdate={handleAfterUpdate}
+                onAfterUpdate={(result: boolean)=>{
+                    handleAfterUpdate(result);
+                }}
                 bookID={bookDetailId}
             />
         </Box>
